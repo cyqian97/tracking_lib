@@ -53,13 +53,18 @@ void OnPointCloud(const sensor_msgs::PointCloud2ConstPtr &ros_pc2) {
     *cloud_ground = *cloud_clusters[0];
     *cloud_nonground = *cloud_clusters[1];
 
+    // Convert to ROS data type
+    sensor_msgs::PointCloud2 output;
+    pcl::toROSMsg(*cloud_nonground, output);
+    pcs_segmented_pub_.publish(output);
+    
     // reset clusters
-    cloud_clusters.clear();
-    segmenter_->segment(*cloud_nonground, cloud_clusters);
-    autosense::common::publishPointCloudArray<autosense::PointICloudPtr>(
-        pcs_segmented_pub_, header, cloud_clusters);
+    // cloud_clusters.clear();
+    // segmenter_->segment(*cloud_nonground, cloud_clusters);
+    // autosense::common::publishPointCloudArray<autosense::PointICloudPtr>(
+    //     pcs_segmented_pub_, header, cloud_clusters);
 
-    ROS_INFO_STREAM("Cloud processed. Took " << clock.takeRealTime()
+    ROS_INFO_STREAM("Ground plane filtered. Took " << clock.takeRealTime()
                                              << "ms.\n");
 }
 
@@ -105,8 +110,11 @@ int main(int argc, char **argv) {
     param.segmenter_type = non_ground_segmenter_type;
     segmenter_ = autosense::segmenter::createNonGroundSegmenter(param);
 
-    pcs_segmented_pub_ = nh.advertise<autosense_msgs::PointCloud2Array>(
-        pub_pcs_segmented_topic, 1);
+    // pcs_segmented_pub_ = nh.advertise<autosense_msgs::PointCloud2Array>(
+    //     pub_pcs_segmented_topic, 1);
+
+    pcs_segmented_pub_ = nh.advertise<sensor_msgs::PointCloud2>(
+        "nonground", 1);
 
     pointcloud_sub_ = nh.subscribe<sensor_msgs::PointCloud2>(
         sub_pc_topic, sub_pc_queue_size, OnPointCloud);

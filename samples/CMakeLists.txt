@@ -52,12 +52,20 @@ include_directories(
 add_executable(${PROJECT_NAME}_detection_node
     detection_node.cpp
 )
+add_executable(${PROJECT_NAME}_gpf_node
+    gpf_node.cpp
+)
 add_executable(${PROJECT_NAME}_tracking_node
     tracking_node.cpp
 )
 
 ### Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_detection_node
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+)
+
+target_link_libraries(${PROJECT_NAME}_gpf_node
     ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
 )
