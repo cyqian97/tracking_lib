@@ -1,5 +1,5 @@
 detect: {
-  frame_id: "velodyne",
+  frame_id: "cepton_10627",
 
   sub_pc_topic: "/kitti/points_raw",
   sub_pc_queue_size: 1,

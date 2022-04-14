@@ -23,7 +23,7 @@ tracking: {
       filter_use_adaptive: true,
       # equals to matcher_match_distance_maximum
       filter_association_score_maximum: 4.0,
-      filter_measurement_noise: 0.4,
+      filter_measurement_noise: 4,
       filter_initial_velocity_noise: 5.0,
       # | xy_propagation_noise    0           0          |
       # |         0   xy_propagation_noise    0          |

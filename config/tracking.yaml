@@ -1,6 +1,6 @@
 tracking: {
-  local_frame_id: "velodyne",
-  global_frame_id: "world",
+  local_frame_id: "cepton_10627",
+  global_frame_id: "cepton_10627",
   # Query Ros TF timeout in ms. ros::Duration time.
   # type: int
   # default: 10
