@@ -4,6 +4,10 @@
  */
 
 #include <pcl_conversions/pcl_conversions.h>  // pcl::fromROSMsg
+#include <pcl_ros/impl/transforms.hpp>
+
+// #include <pcl_ros/point_cloud.h> // pcl_ros::transformPointCloud	
+// #include <pcl/common/transforms.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Header.h>
@@ -20,7 +24,12 @@
 
 const std::string param_ns_prefix_ = "detect";  // NOLINT
 std::string frame_id_;                          // NOLINT
+
+bool inverted_lidar_;
+tf::Transform tf_rot_y;
+
 bool use_roi_filter_;
+
 autosense::ROIParams params_roi_;
 // ROS Subscriber
 ros::Subscriber pointcloud_sub_;
@@ -34,12 +43,21 @@ void OnPointCloud(const sensor_msgs::PointCloud2ConstPtr &ros_pc2) {
     autosense::common::Clock clock;
 
     autosense::PointICloudPtr cloud(new autosense::PointICloud);
+    
     pcl::fromROSMsg(*ros_pc2, *cloud);
     ROS_INFO_STREAM(" Cloud inputs: #" << cloud->size() << " Points");
 
     std_msgs::Header header = ros_pc2->header;
     header.frame_id = frame_id_;
     header.stamp = ros::Time::now();
+    
+    if (inverted_lidar_) {
+        autosense::PointICloudPtr cloud_in(new autosense::PointICloud);
+        *cloud_in = *cloud;
+        cloud->clear();
+        ROS_INFO_STREAM("Start to invert");
+        pcl_ros::transformPointCloud(*cloud_in,*cloud,tf_rot_y);
+    }
 
     if (use_roi_filter_) {
         autosense::roi::applyROIFilter<autosense::PointI>(params_roi_, cloud);
@@ -71,6 +89,13 @@ int main(int argc, char **argv) {
     ros::NodeHandle private_nh = ros::NodeHandle("~");
     ros::AsyncSpinner spiner(1);
 
+    // Initialize the transform to rotate point cloud
+    tf_rot_y.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+    tf::Quaternion q;
+    q.setRPY(0, 3.14159265 , 0);
+    tf_rot_y.setRotation(q);
+
+
     /// @brief Load ROS parameters from rosparam server
     private_nh.getParam(param_ns_prefix_ + "/frame_id", frame_id_);
 
@@ -82,6 +107,9 @@ int main(int argc, char **argv) {
                         sub_pc_queue_size);
     private_nh.getParam(param_ns_prefix_ + "/pub_pcs_segmented_topic",
                         pub_pcs_segmented_topic);
+
+    private_nh.getParam(param_ns_prefix_ + "/inverted_lidar",
+                        inverted_lidar_);
 
     /// @note Important to use roi filter for "Ground remover"
     private_nh.param<bool>(param_ns_prefix_ + "/use_roi_filter",

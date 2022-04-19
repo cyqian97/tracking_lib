@@ -56,7 +56,7 @@ Visualization Manager:
       Displays:
         - Class: rviz/Image
           Enabled: true
-          Image Topic: /camera/image_raw
+          Image Topic: /camera/center/image_raw
           Max Value: 1
           Median window: 5
           Min Value: 0

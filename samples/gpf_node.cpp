@@ -4,6 +4,7 @@
  */
 
 #include <pcl_conversions/pcl_conversions.h>  // pcl::fromROSMsg
+#include <pcl_ros/impl/transforms.hpp>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Header.h>
@@ -21,6 +22,7 @@
 const std::string param_ns_prefix_ = "detect";  // NOLINT
 std::string frame_id_;                          // NOLINT
 bool use_roi_filter_;
+bool inverted_lidar_;
 autosense::ROIParams params_roi_;
 // ROS Subscriber
 ros::Subscriber pointcloud_sub_;
@@ -41,6 +43,19 @@ void OnPointCloud(const sensor_msgs::PointCloud2ConstPtr &ros_pc2) {
     header.frame_id = frame_id_;
     header.stamp = ros::Time::now();
 
+    if (inverted_lidar_) {
+        autosense::PointICloudPtr cloud_in(new autosense::PointICloud);
+        *cloud_in = *cloud;
+        cloud->clear();
+        tf::Transform transform;
+        transform.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+        tf::Quaternion q;
+        q.setRPY(0, 180, 0);
+        transform.setRotation(q);
+        ROS_INFO_STREAM("Start to invert");
+        pcl_ros::transformPointCloud(*cloud_in,*cloud,transform);
+    }
+
     if (use_roi_filter_) {
         autosense::roi::applyROIFilter<autosense::PointI>(params_roi_, cloud);
     }
@@ -52,6 +67,8 @@ void OnPointCloud(const sensor_msgs::PointCloud2ConstPtr &ros_pc2) {
     ground_remover_->segment(*cloud, cloud_clusters);
     *cloud_ground = *cloud_clusters[0];
     *cloud_nonground = *cloud_clusters[1];
+
+    // Print the 
 
     // Convert to ROS data type
     sensor_msgs::PointCloud2 output;
@@ -88,6 +105,10 @@ int main(int argc, char **argv) {
     private_nh.getParam(param_ns_prefix_ + "/pub_pcs_segmented_topic",
                         pub_pcs_segmented_topic);
 
+    private_nh.getParam(param_ns_prefix_ + "/inverted_lidar",
+                        inverted_lidar_);
+
+    
     /// @note Important to use roi filter for "Ground remover"
     private_nh.param<bool>(param_ns_prefix_ + "/use_roi_filter",
                            use_roi_filter_, false);
